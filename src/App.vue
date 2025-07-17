@@ -231,8 +231,13 @@ function startAutoPlay() {
   autoPlayController.startAutoPlay({
     rounds: autoPlayRounds.value,
     cells: autoPlayCells.value,
-    onComplete: () => {
+    onComplete: (reason) => {
       autoPlayRunning.value = false;
+      if (reason === 'insufficient_balance') {
+        showMessage('Auto play stopped: Insufficient balance to continue', 3000);
+      } else if (reason === 'completed') {
+        showMessage(`Auto play completed ${autoPlayRounds.value} rounds`, 2000);
+      }
     },
     delayBetweenRounds: 200,
     delayAfterReveal: 400,

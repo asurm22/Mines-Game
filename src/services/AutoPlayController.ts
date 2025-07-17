@@ -5,7 +5,7 @@ export interface AutoPlayOptions {
   cells: { row: number; col: number }[];
   onRoundStart?: (round: number) => void;
   onRoundEnd?: (round: number, result: any) => void;
-  onComplete?: () => void;
+  onComplete?: (reason: 'completed' | 'insufficient_balance' | 'stopped') => void;
   delayBetweenRounds?: number;
   delayAfterReveal?: number;
 }
@@ -26,25 +26,34 @@ export class AutoPlayController {
     if (options.cells.length === 0) return;
     this.running = true;
     this.gameService.resetGame();
+    let completionReason: 'completed' | 'insufficient_balance' | 'stopped' = 'completed';
+    
     for (let round = 1; round <= options.rounds; ++round) {
+      if (!this.running) {
+        completionReason = 'stopped';
+        break;
+      }
+      
       options.onRoundStart?.(round);
       const gameStarted = this.gameService.startNewGame();
-      if (!gameStarted) break; 
+      if (!gameStarted) {
+        completionReason = 'insufficient_balance';
+        break;
+      }
       await this.delay(options.delayBetweenRounds ?? 200);
-      let gameEnded = false;
       for (const cell of options.cells) {
         this.gameService.revealCell(cell.row, cell.col);
         if (this.gameService.gameBoard.value.gameState !== 'playing') {
-          gameEnded = true;
           break;
         }
       }
+      
       const result = this.gameService.cashOut();
       options.onRoundEnd?.(round, result);
       await this.delay(options.delayAfterReveal ?? 400);
     }
     this.running = false;
-    options.onComplete?.();
+    options.onComplete?.(completionReason);
   }
 
   stop() {
