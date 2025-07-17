@@ -27,9 +27,9 @@ export class AutoPlayController {
     this.running = true;
     this.gameService.resetGame();
     for (let round = 1; round <= options.rounds; ++round) {
-      if (!this.gameService.canAffordBet(this.gameService.currentBet)) break;
       options.onRoundStart?.(round);
-      this.gameService.startNewGame();
+      const gameStarted = this.gameService.startNewGame();
+      if (!gameStarted) break; 
       await this.delay(options.delayBetweenRounds ?? 200);
       let gameEnded = false;
       for (const cell of options.cells) {
@@ -39,11 +39,7 @@ export class AutoPlayController {
           break;
         }
       }
-      
-      let result = null;
-      if (this.gameService.gameBoard.value.gameState === 'playing') {
-        result = this.gameService.cashOut();
-      }
+      const result = this.gameService.cashOut();
       options.onRoundEnd?.(round, result);
       await this.delay(options.delayAfterReveal ?? 400);
     }

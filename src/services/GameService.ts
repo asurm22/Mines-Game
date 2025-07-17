@@ -89,6 +89,13 @@ export class GameService {
     return success;
   }
 
+  clickRandom(): boolean {
+    if (this.gameBoard.value.gameState !== GameState.PLAYING) {
+      return false;
+    }
+    const cell = this.gameBoard.value.chooseRandom();
+    return this.revealCell(cell.row, cell.col);
+  }
 
   cashOut(): GameResult | null {
     if (!this._isGameActive || this.gameBoard.value.gameState !== GameState.PLAYING) {

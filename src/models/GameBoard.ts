@@ -134,6 +134,21 @@ export class GameBoard {
     return true;
   }
 
+  chooseRandom(): Cell {
+    const positions: [number, number][] = [];
+    for (let row = 0; row < this._rows; row++) {
+      for (let col = 0; col < this._cols; col++) {
+        if (!this._grid[row][col].isRevealed) {
+          positions.push([row, col]);
+        }
+      }
+    }
+    const randomIndex = Math.floor(Math.random() * positions.length); 
+    const [row, col] = positions[randomIndex];
+    return this._grid[row][col];
+  }
+
+
   reset(): void {
     this._gameState = GameState.READY;
     this._revealedCount = 0;

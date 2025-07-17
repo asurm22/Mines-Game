@@ -94,7 +94,7 @@
               :key="`${cell.row}-${cell.col}`"
               :class="[cell.getCssClasses(), isAutoPlayCell(cell) ? 'autoplay-selected' : '']"
               @click="autoPlayEnabled ? toggleAutoPlayCell(cell) : handleCellClick(cell.row, cell.col)"
-              :disabled="cell.isRevealed || (!isBoardActive && !autoPlayEnabled) || autoPlayRunning"
+              :disabled="cell.isRevealed || autoPlayRunning"
             >
               {{ cell.getDisplayValue() }}
             </button>
@@ -106,19 +106,26 @@
           <button 
             class="btn primary" 
             @click="autoPlayEnabled ? startAutoPlay() : startGame()" 
-            :disabled="gameService.gameBoard.value.gameState === 'playing' || !canStartGame || autoPlayRunning"
+            :disabled="autoPlayRunning"
           >
             {{ autoPlayEnabled ? (autoPlayRunning ? 'Auto Playing' : 'Start Auto Play') : 'Start Game' }}
           </button>
           <button 
             class="btn secondary" 
             @click="cashOut" 
-            :disabled="!canCashOut || autoPlayRunning"
+            :disabled="autoPlayRunning"
           >
             Cash Out
           </button>
           <button class="btn danger" @click="resetGame" :disabled="autoPlayRunning">
             Reset
+          </button>
+          <button 
+          class="btn secondary" 
+          @click="clickRandom" 
+          :disabled="autoPlayRunning || gameService.gameBoard.value.gameState != 'playing'"
+          >
+            Random
           </button>
         </div>
       </div>
@@ -175,24 +182,12 @@ const flattenedGrid = computed(() => {
   return grid.flat();
 });
 
-const canStartGame = computed(() => {
-  return gameService.canAffordBet(betAmount.value);
-});
-
-const canCashOut = computed(() => {
-  return gameService.gameBoard.value.gameState === 'playing';
-});
-
 const canIncreaseBet = computed(() => {
   return gameService.canAffordBet(betAmount.value * 2);
 });
 
 const canDecreaseBet = computed(() => {
   return betAmount.value > 1;
-});
-
-const isBoardActive = computed(() => {
-  return gameService.gameBoard.value.gameState === 'playing';
 });
 
 const nextMultiplier = computed(() => {
@@ -232,10 +227,6 @@ function startAutoPlay() {
     showMessage('Select cells to auto play!');
     return;
   }
-  if (!canStartGame.value) {
-    showMessage('Insufficient balance');
-    return;
-  }
   autoPlayRunning.value = true;
   autoPlayController.startAutoPlay({
     rounds: autoPlayRounds.value,
@@ -250,17 +241,24 @@ function startAutoPlay() {
 
 // Game actions
 const startGame = () => {
-  if (!canStartGame.value) {
+  const success = gameService.startNewGame();
+  if (success) {
+    showMessage('Game started');
+  } else {
     showMessage('Insufficient balance');
-    return;
   }
-  gameService.startNewGame();
-  showMessage('Game started');
 };
 
 const handleCellClick = (row: number, col: number) => {
-  if (!isBoardActive.value || autoPlayEnabled.value || autoPlayRunning.value) return;
+  if (autoPlayEnabled.value || autoPlayRunning.value) return;
   const success = gameService.revealCell(row, col);
+  if (success) {
+    showGameResult();
+  }
+};
+
+const clickRandom = () => {
+  const success = gameService.clickRandom();
   if (success) {
     showGameResult();
   }
